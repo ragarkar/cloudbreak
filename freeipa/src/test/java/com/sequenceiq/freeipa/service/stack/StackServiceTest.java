@@ -216,6 +216,14 @@ class StackServiceTest {
     }
 
     @Test
+    void getMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedWithList() {
+        when(stackRepository.findMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedWithList(ENVIRONMENT_CRN, ACCOUNT_ID)).thenReturn(List.of(stack));
+        List<Stack> results = underTest.getMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedWithList(ENVIRONMENT_CRN, ACCOUNT_ID);
+
+        assertEquals(List.of(stack), results);
+    }
+
+    @Test
     void getMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedThrowsWhenCrnDoesNotExist() {
         when(stackRepository.findMultipleByEnvironmentCrnAndAccountIdEvenIfTerminated(ENVIRONMENT_CRN, ACCOUNT_ID)).thenReturn(List.of());
         NotFoundException notFoundException =

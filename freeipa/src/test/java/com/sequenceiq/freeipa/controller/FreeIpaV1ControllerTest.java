@@ -3,6 +3,7 @@ package com.sequenceiq.freeipa.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.describe.DescribeFreeIpaResponse;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.rebuild.RebuildRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -165,6 +167,13 @@ class FreeIpaV1ControllerTest {
     @Test
     void describe() {
         assertNull(underTest.describe(ENVIRONMENT_CRN));
+    }
+
+    @Test
+    void describeAll() {
+        List<DescribeFreeIpaResponse> response = List.of(new DescribeFreeIpaResponse());
+        when(describeService.describeAll(anyString(), anyString())).thenReturn(response);
+        assertEquals(response, underTest.describeAll(ENVIRONMENT_CRN));
     }
 
     @Test

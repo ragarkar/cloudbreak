@@ -109,10 +109,26 @@ public class StackService implements ResourcePropertyProvider {
         return stacks;
     }
 
+    public List<Stack> getMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedWithList(String environmentCrn, String accountId) {
+        List<Stack> stacks = findMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedWithList(environmentCrn, accountId);
+        if (stacks.isEmpty()) {
+            throw new NotFoundException(String.format("FreeIPA stack by environment [%s] not found", environmentCrn));
+        }
+        return stacks;
+    }
+
     public List<Stack> findMultipleByEnvironmentCrnAndAccountIdEvenIfTerminated(String environmentCrn, String accountId) {
         List<Stack> stacks = stackRepository.findMultipleByEnvironmentCrnAndAccountIdEvenIfTerminated(environmentCrn, accountId);
         if (stacks.isEmpty()) {
             stacks = childEnvironmentService.findMultipleParentStackByChildEnvironmentCrnEvenIfTerminated(environmentCrn, accountId);
+        }
+        return stacks;
+    }
+
+    public List<Stack> findMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedWithList(String environmentCrn, String accountId) {
+        List<Stack> stacks = stackRepository.findMultipleByEnvironmentCrnAndAccountIdEvenIfTerminatedWithList(environmentCrn, accountId);
+        if (stacks.isEmpty()) {
+            stacks = childEnvironmentService.findMultipleParentStackByChildEnvironmentCrnEvenIfTerminatedWithList(environmentCrn, accountId);
         }
         return stacks;
     }
