@@ -47,7 +47,7 @@ public class UmsClient extends MicroserviceClient<GrpcUmsClient, Void> {
     @Override
     public <E extends Enum<E>, W extends WaitObject> W waitObject(CloudbreakTestDto entity, String name, Map<String, E> desiredStatuses,
             TestContext testContext, Set<E> ignoredFailedStatuses) {
-        throw new TestFailException("Wait object does not support by ums client");
+        throw new TestFailException("Wait object is not supported by the ums client");
     }
 
     @Override

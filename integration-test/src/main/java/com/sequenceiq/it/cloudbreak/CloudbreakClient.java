@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
@@ -85,7 +86,8 @@ public class CloudbreakClient extends MicroserviceClient<com.sequenceiq.cloudbre
             TestContext testContext, Set<E> ignoredFailedStatuses) {
         Map<String, Status> map = new HashMap<>();
         desiredStatuses.forEach((key, v) -> map.put(key, (Status) v));
-        return (T) new CloudbreakWaitObject(this, name, map, testContext.getActingUserCrn().getAccountId());
+        Set<Status> ignoredFailedStatusesCopy = ignoredFailedStatuses.stream().map(st -> (Status) st).collect(Collectors.toSet());
+        return (T) new CloudbreakWaitObject(this, name, map, testContext.getActingUserCrn().getAccountId(), ignoredFailedStatusesCopy);
     }
 
     @Override

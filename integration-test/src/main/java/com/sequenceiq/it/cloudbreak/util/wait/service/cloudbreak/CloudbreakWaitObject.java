@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.collections4.ListUtils;
 
@@ -49,14 +50,17 @@ public class CloudbreakWaitObject implements WaitObject {
 
     private final Map<String, Status> desiredStatuses;
 
+    private final Set<Status> ignoredFailedStatuses;
+
     private final String accountId;
 
     private StackStatusV4Response stackStatus;
 
-    public CloudbreakWaitObject(CloudbreakClient client, String name, Map<String, Status> desiredStatuses, String accountId) {
+    public CloudbreakWaitObject(CloudbreakClient client, String name, Map<String, Status> desiredStatuses, String accountId, Set<Status> ignoredFailedStatuses) {
         this.client = client;
         this.name = name;
         this.desiredStatuses = desiredStatuses;
+        this.ignoredFailedStatuses = ignoredFailedStatuses;
         this.accountId = accountId;
     }
 
@@ -84,7 +88,7 @@ public class CloudbreakWaitObject implements WaitObject {
 
     @Override
     public boolean isFailedButIgnored() {
-        return false;
+        return actualStatusesEnumValues().stream().anyMatch(ignoredFailedStatuses::contains);
     }
 
     @Override
