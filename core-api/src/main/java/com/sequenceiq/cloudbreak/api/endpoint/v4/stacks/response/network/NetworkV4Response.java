@@ -40,4 +40,13 @@ public class NetworkV4Response extends NetworkV4Base {
     public void setId(Long id) {
         this.id = id;
     }
+
+    @Override
+    public String toString() {
+        return "NetworkV4Response{" +
+                "id=" + id +
+                ", workspace=" + workspace +
+                '}';
+    }
+
 }
