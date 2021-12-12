@@ -33,7 +33,7 @@ public class GcpCloudFunctionality implements CloudFunctionality {
     }
 
     @Override
-    public List<String> listVolumeKmsKeyIds(List<String> instanceIds) {
+    public List<String> listVolumeEncryptionKeyIds(String clusterName, List<String> instanceIds) {
         throw new NotImplementedException("Not yet implemented on GCP");
     }
 

@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ public class AzureClientActions {
             Map<Integer, VirtualMachineDataDisk> dataDiskMap = vm.dataDisks();
             if (dataDiskMap != null && !dataDiskMap.isEmpty()) {
                 diskIds.addAll(dataDiskMap.values().stream().map(HasId::id).collect(Collectors.toList()));
+                LOGGER.info("Instance '{}' has attached volumes [{}].", id, diskIds);
             }
         });
         return diskIds;
@@ -120,5 +122,29 @@ public class AzureClientActions {
                 .filter(StringUtils::isNotEmpty)
                 .map(id -> azure.virtualMachines().getByResourceGroup(getResourceGroupName(clusterName, id), id))
                 .collect(Collectors.toMap(VirtualMachine::id, VirtualMachine::tags));
+    }
+
+    public List<String> getVolumesDesId(String clusterName, List<String> instanceIds) {
+        List<String> diskEncryptionSetIds = new ArrayList<>();
+
+        instanceIds.forEach(id -> {
+            String resourceGroup = getResourceGroupName(clusterName, id);
+            VirtualMachine virtualMachine = azure.virtualMachines().getByResourceGroup(resourceGroup, id);
+            Map<Integer, VirtualMachineDataDisk> dataDiskMap = virtualMachine.dataDisks();
+
+            if (MapUtils.isNotEmpty(dataDiskMap)) {
+                Map<String, String> volumeIdDesIdMap = dataDiskMap.values()
+                        .stream()
+                        .collect(Collectors.toMap(HasId::id, virtualMachineDataDisk ->
+                                virtualMachineDataDisk
+                                        .inner()
+                                        .managedDisk()
+                                        .diskEncryptionSet()
+                                        .id()));
+                LOGGER.info("Instance '{}' has attached volumes [{}] and disk encryption sets [{}].", id, volumeIdDesIdMap.keySet(), volumeIdDesIdMap.values());
+                diskEncryptionSetIds.addAll(volumeIdDesIdMap.values());
+            }
+        });
+        return diskEncryptionSetIds;
     }
 }
