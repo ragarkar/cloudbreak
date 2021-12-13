@@ -175,6 +175,8 @@ cb:
       infrastructure: 500
       upgrade: 200
 
+  log4j.patch.enabled: true
+
   aws:
     spotinstances.enabled: true
     disabled.instance.types:
