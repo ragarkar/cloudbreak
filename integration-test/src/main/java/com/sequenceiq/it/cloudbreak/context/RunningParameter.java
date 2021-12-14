@@ -7,6 +7,7 @@ import javax.inject.Inject;
 
 import org.springframework.stereotype.Component;
 
+import com.sequenceiq.cloudbreak.polling.TimeoutChecker;
 import com.sequenceiq.it.cloudbreak.actor.CloudbreakUser;
 
 @Component
@@ -31,6 +32,8 @@ public class RunningParameter {
     private Method urlMethod;
 
     private FlowWaitConfig waitForFlow = FlowWaitConfig.WAIT_SUCCESS;
+
+    private TimeoutChecker timeoutChecker;
 
     public enum FlowWaitConfig {
         WAIT_SUCCESS,
@@ -113,6 +116,10 @@ public class RunningParameter {
 
     public Method getUrlMethod() {
         return urlMethod;
+    }
+
+    public TimeoutChecker getTimeoutChecker() {
+        return timeoutChecker;
     }
 
     public RunningParameter withKey(String key) {
@@ -215,6 +222,11 @@ public class RunningParameter {
 
     public static RunningParameter waitForFlowFail() {
         return new RunningParameter().withWaitForFlowFail();
+    }
+
+    public RunningParameter withTimeoutChecker(TimeoutChecker timeoutChecker) {
+        this.timeoutChecker = timeoutChecker;
+        return this;
     }
 
 }
