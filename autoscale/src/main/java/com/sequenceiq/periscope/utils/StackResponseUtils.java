@@ -33,11 +33,18 @@ public class StackResponseUtils {
                 .filter(instanceGroupV4Response -> instanceGroupV4Response.getName().equalsIgnoreCase(hostGroup))
                 .flatMap(instanceGroupV4Response -> instanceGroupV4Response.getMetadata().stream())
                 .filter(instanceMetaData -> instanceMetaData.getDiscoveryFQDN() != null)
-                // TODO CB-14929: the computation of host group counts depends on the scaling mechanism being used.
-                //  Even for STOPPED instances, this may require additional checks on status of the nodes.
-                .filter(instanceMetaData -> instanceMetaData.getInstanceStatus() != InstanceStatus.STOPPED)
+                // TODO CB-15139 Determine if filter is sufficient to retrieve all the RUNNING compute nodes with SERVICES_HEALTHY
+                //  and all the STOPPED nodes are not present. Should cover both scaling mechanisms?
+                .filter(instanceMetaData -> !isNodeInUnacceptableState(instanceMetaData.getInstanceStatus()))
                 .collect(Collectors.toMap(InstanceMetaDataV4Response::getDiscoveryFQDN,
                         InstanceMetaDataV4Response::getInstanceId));
+    }
+
+    private boolean isNodeInUnacceptableState(InstanceStatus instanceStatus) {
+        return InstanceStatus.STOPPED.equals(instanceStatus)
+                || InstanceStatus.DECOMMISSIONED.equals(instanceStatus)
+                || InstanceStatus.SERVICES_UNHEALTHY.equals(instanceStatus)
+                || InstanceStatus.SERVICES_RUNNING.equals(instanceStatus);
     }
 
     public Integer getNodeCountForHostGroup(StackV4Response stackResponse, String hostGroup) {

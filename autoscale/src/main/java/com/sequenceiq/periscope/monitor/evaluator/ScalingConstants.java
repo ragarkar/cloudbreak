@@ -18,6 +18,9 @@ public class ScalingConstants {
 
     public static final int DEFAULT_MAX_LOAD_BASED_AUTOSCALING_COOLDOWN_MINS = 180;
 
+    // TODO CB-15139: Determine if StopStart should be set by default
+    public static final boolean STOP_START_SCALING_ENABLED = Boolean.TRUE;
+
     private ScalingConstants() {
     }
 }
