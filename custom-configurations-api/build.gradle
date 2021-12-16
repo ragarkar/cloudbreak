@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(':core-api')
+    implementation project(':common')
     implementation group: 'jakarta.ws.rs',                 name: 'jakarta.ws.rs-api',              version: '2.1.6'
     implementation group: 'org.springframework.boot',      name: 'spring-boot-starter-security',   version: springBootVersion
     implementation group: 'io.swagger',                    name: 'swagger-annotations',            version: '1.5.21'
