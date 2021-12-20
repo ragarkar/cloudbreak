@@ -1,5 +1,6 @@
 package com.sequenceiq.cloudbreak.core.bootstrap.service;
 
+import java.util.Map;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -61,7 +62,7 @@ public class ClusterServiceRunner {
         generateGatewaySignKeys(cluster);
 
         MDCBuilder.buildMdcContext(cluster);
-        hostRunner.runClusterServices(stack, cluster);
+        hostRunner.runClusterServices(stack, cluster, Map.of());
         updateAmbariClientConfig(stack, cluster);
         for (InstanceMetaData instanceMetaData : stack.getRunningInstanceMetaDataSet()) {
             instanceMetaDataService.updateInstanceStatus(instanceMetaData, InstanceStatus.SERVICES_RUNNING);

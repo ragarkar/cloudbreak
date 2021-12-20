@@ -110,6 +110,7 @@ import com.sequenceiq.cloudbreak.service.sharedservice.DatalakeService;
 import com.sequenceiq.cloudbreak.service.stack.InstanceGroupService;
 import com.sequenceiq.cloudbreak.service.stack.InstanceMetaDataService;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
+import com.sequenceiq.cloudbreak.service.stack.TargetedUpscaleSupportService;
 import com.sequenceiq.cloudbreak.service.stack.flow.MountDisks;
 import com.sequenceiq.cloudbreak.template.kerberos.KerberosDetailService;
 import com.sequenceiq.cloudbreak.template.views.RdsView;
@@ -242,19 +243,14 @@ public class ClusterHostServiceRunner {
     @Inject
     private FreeIpaConfigProvider freeIpaConfigProvider;
 
-    public void runClusterServices(@Nonnull Stack stack, @Nonnull Cluster cluster) {
+    @Inject
+    private TargetedUpscaleSupportService targetedUpscaleSupportService;
+
+    public void runClusterServices(@Nonnull Stack stack, @Nonnull Cluster cluster, Map<String, String> candidateAddresses) {
         try {
             Set<Node> allNodes = stackUtil.collectNodes(stack);
-            Set<Node> reachableNodes = stackUtil.collectAndCheckReachableNodes(stack, Set.of());
-            List<GatewayConfig> gatewayConfigs = gatewayConfigService.getAllGatewayConfigs(stack);
-            SaltConfig saltConfig = createSaltConfig(stack, cluster, gatewayConfigs, reachableNodes);
-            ExitCriteriaModel exitCriteriaModel = clusterDeletionBasedModel(stack.getId(), cluster.getId());
-            modifyStartupMountRole(stack, reachableNodes, GrainOperation.ADD);
-            hostOrchestrator.initServiceRun(gatewayConfigs, allNodes, reachableNodes, saltConfig, exitCriteriaModel, stack.getCloudPlatform());
-            mountDisks(stack, Map.of(), allNodes);
-            recipeEngine.executePreClusterManagerRecipes(stack, hostGroupService.getByClusterWithRecipes(cluster.getId()));
-            hostOrchestrator.runService(gatewayConfigs, reachableNodes, saltConfig, exitCriteriaModel);
-            modifyStartupMountRole(stack, reachableNodes, GrainOperation.REMOVE);
+            Set<Node> reachableNodes = stackUtil.collectAndCheckReachableNodes(stack, candidateAddresses.keySet());
+            executeRunClusterServices(stack, cluster, candidateAddresses, allNodes, reachableNodes);
         } catch (CloudbreakOrchestratorCancelledException e) {
             throw new CancellationException(e.getMessage());
         } catch (CloudbreakOrchestratorException | IOException | CloudbreakException e) {
@@ -270,20 +266,25 @@ public class ClusterHostServiceRunner {
     public void runTargetedClusterServices(@Nonnull Stack stack, @Nonnull Cluster cluster, Map<String, String> candidateAddresses) {
         try {
             Set<Node> reachableCandidates = getReachableCandidates(stack, candidateAddresses);
-            List<GatewayConfig> gatewayConfigs = gatewayConfigService.getAllGatewayConfigs(stack);
-            SaltConfig saltConfig = createSaltConfig(stack, cluster, gatewayConfigs, reachableCandidates);
-            ExitCriteriaModel exitCriteriaModel = clusterDeletionBasedModel(stack.getId(), cluster.getId());
-            modifyStartupMountRole(stack, reachableCandidates, GrainOperation.ADD);
-            hostOrchestrator.initServiceRun(gatewayConfigs, reachableCandidates, reachableCandidates, saltConfig, exitCriteriaModel, stack.getCloudPlatform());
-            mountDisks(stack, candidateAddresses, reachableCandidates);
-            recipeEngine.executePreClusterManagerRecipes(stack, hostGroupService.getByClusterWithRecipes(cluster.getId()));
-            hostOrchestrator.runService(gatewayConfigs, reachableCandidates, saltConfig, exitCriteriaModel);
-            modifyStartupMountRole(stack, reachableCandidates, GrainOperation.REMOVE);
+            executeRunClusterServices(stack, cluster, candidateAddresses, reachableCandidates, reachableCandidates);
         } catch (CloudbreakOrchestratorCancelledException e) {
             throw new CancellationException(e.getMessage());
         } catch (CloudbreakOrchestratorException | IOException | CloudbreakException e) {
             throw new CloudbreakServiceException(e.getMessage(), e);
         }
+    }
+
+    private void executeRunClusterServices(Stack stack, Cluster cluster, Map<String, String> candidateAddresses,
+            Set<Node> allNodes, Set<Node> reachableNodes) throws IOException, CloudbreakOrchestratorException, CloudbreakException {
+        List<GatewayConfig> gatewayConfigs = gatewayConfigService.getAllGatewayConfigs(stack);
+        SaltConfig saltConfig = createSaltConfig(stack, cluster, gatewayConfigs, reachableNodes);
+        ExitCriteriaModel exitCriteriaModel = clusterDeletionBasedModel(stack.getId(), cluster.getId());
+        modifyStartupMountRole(stack, reachableNodes, GrainOperation.ADD);
+        hostOrchestrator.initServiceRun(gatewayConfigs, allNodes, reachableNodes, saltConfig, exitCriteriaModel, stack.getCloudPlatform());
+        mountDisks(stack, candidateAddresses, allNodes);
+        recipeEngine.executePreClusterManagerRecipes(stack, hostGroupService.getByClusterWithRecipes(cluster.getId()));
+        hostOrchestrator.runService(gatewayConfigs, reachableNodes, saltConfig, exitCriteriaModel);
+        modifyStartupMountRole(stack, reachableNodes, GrainOperation.REMOVE);
     }
 
     public Set<Node> getReachableCandidates(Stack stack, Map<String, String> candidateAddresses) {
@@ -292,32 +293,20 @@ public class ClusterHostServiceRunner {
             Set<Node> reachableNodes = stackUtil.collectAndCheckReachableNodes(stack, candidateAddresses.keySet());
             Set<Node> reachableCandidates = reachableNodes.stream().filter(node ->
                     candidateAddresses.containsKey(node.getHostname())).collect(Collectors.toSet());
-            if (targetedHighStateSupported(stack, reachableCandidates.stream().map(candidate -> candidate.getHostname()).collect(Collectors.toSet()))) {
-                if (reachableCandidates.stream().noneMatch(node -> StringUtils.equals(node.getHostname(), primaryGwImd.getDiscoveryFQDN()))) {
-                    Node primaryGatewayNode = new Node(primaryGwImd.getPrivateIp(), primaryGwImd.getPublicIp(), primaryGwImd.getInstanceId(),
-                            primaryGwImd.getInstanceGroup().getTemplate().getInstanceType(), primaryGwImd.getDiscoveryFQDN(),
-                            primaryGwImd.getInstanceGroupName());
-                    // in case of upscale we should add primary gateway to candidates
-                    reachableCandidates.add(primaryGatewayNode);
-                }
-                return reachableCandidates;
+            if (reachableCandidates.stream().noneMatch(node -> StringUtils.equals(node.getHostname(), primaryGwImd.getDiscoveryFQDN()))) {
+                Node primaryGatewayNode = new Node(primaryGwImd.getPrivateIp(), primaryGwImd.getPublicIp(), primaryGwImd.getInstanceId(),
+                        primaryGwImd.getInstanceGroup().getTemplate().getInstanceType(), primaryGwImd.getDiscoveryFQDN(),
+                        primaryGwImd.getInstanceGroupName());
+                // in case of upscale we should add primary gateway to candidates
+                reachableCandidates.add(primaryGatewayNode);
             }
-            return reachableNodes;
+            return reachableCandidates;
         } catch (NodesUnreachableException e) {
             String errorMessage = "Can not run cluster services on new nodes because the configuration management service is not responding on these nodes: "
                     + e.getUnreachableNodes();
             LOGGER.error(errorMessage);
             throw new CloudbreakServiceException(errorMessage, e);
         }
-    }
-
-    private boolean targetedHighStateSupported(Stack stack, Set<String> nodes) {
-        GatewayConfig primaryGatewayConfig = gatewayConfigService.getPrimaryGatewayConfig(stack);
-        // is unbound elimination supported?
-        boolean unboundEliminationSupported = entitlementService.isUnboundEliminationSupported(ThreadBasedUserCrnProvider.getAccountId());
-        // is unbound cluster config already removed?
-        boolean unboundConfigRemoved = hostOrchestrator.unboundClusterConfigPresentOnAnyNodes(primaryGatewayConfig, nodes);
-        return unboundEliminationSupported && unboundConfigRemoved;
     }
 
     private void mountDisks(Stack stack, Map<String, String> candidateAddresses, Set<Node> allNodes) throws CloudbreakException {
@@ -347,7 +336,12 @@ public class ClusterHostServiceRunner {
         Stack stack = stackService.getByIdWithListsInTransaction(stackId);
         Cluster cluster = stack.getCluster();
         candidates = collectUpscaleCandidates(cluster.getId(), hostGroupName, scalingAdjustment);
-        runTargetedClusterServices(stack, cluster, candidates);
+        if (targetedUpscaleSupportService.targetedUpscaleOperationSupported(stack.getResourceCrn()) &&
+                !candidates.keySet().contains(stack.getPrimaryGatewayInstance().getDiscoveryFQDN())) {
+            runTargetedClusterServices(stack, cluster, candidates);
+        } else {
+            runClusterServices(stack, cluster, candidates);
+        }
         return candidates;
     }
 

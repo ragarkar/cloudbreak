@@ -22,6 +22,7 @@ import com.sequenceiq.cloudbreak.orchestrator.model.Node;
 import com.sequenceiq.cloudbreak.service.cluster.ClusterApiConnectors;
 import com.sequenceiq.cloudbreak.service.cluster.ClusterService;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
+import com.sequenceiq.cloudbreak.service.stack.TargetedUpscaleSupportService;
 
 @Service
 public class ClusterManagerUpscaleService {
@@ -43,6 +44,9 @@ public class ClusterManagerUpscaleService {
     @Inject
     private ClusterApiConnectors clusterApiConnectors;
 
+    @Inject
+    private TargetedUpscaleSupportService targetedUpscaleSupportService;
+
     public void upscaleClusterManager(Long stackId, String hostGroupName, Integer scalingAdjustment, boolean primaryGatewayChanged)
             throws ClusterClientInitException {
         Stack stack = stackService.getByIdWithListsInTransaction(stackId);
@@ -62,8 +66,12 @@ public class ClusterManagerUpscaleService {
         clusterService.updateInstancesToRunning(stack.getCluster().getId(), hostsPerHostGroup);
 
         ClusterApi connector = clusterApiConnectors.getConnector(stack);
-        Set<Node> reachableCandidates = hostRunner.getReachableCandidates(stack, hosts);
-        connector.waitForHosts(stack.getNotDeletedInstanceMetaDataSet().stream().filter(md -> reachableCandidates.stream().map(node ->
-                node.getHostname()).collect(Collectors.toList()).contains(md.getDiscoveryFQDN())).collect(Collectors.toSet()));
+        if (targetedUpscaleSupportService.targetedUpscaleOperationSupported(stack.getResourceCrn()) && !primaryGatewayChanged) {
+            Set<Node> reachableCandidates = hostRunner.getReachableCandidates(stack, hosts);
+            connector.waitForHosts(stack.getNotDeletedInstanceMetaDataSet().stream().filter(md -> reachableCandidates.stream().map(node ->
+                    node.getHostname()).collect(Collectors.toList()).contains(md.getDiscoveryFQDN())).collect(Collectors.toSet()));
+        } else {
+            connector.waitForHosts(stackService.getByIdWithListsInTransaction(stackId).getRunningInstanceMetaDataSet());
+        }
     }
 }

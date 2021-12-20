@@ -215,7 +215,7 @@ public class ClusterHostServiceRunnerTest {
     public void shouldUsecollectAndCheckReachableNodes() throws NodesUnreachableException {
         try {
             expectedException.expect(NullPointerException.class);
-            underTest.runClusterServices(stack, cluster);
+            underTest.runClusterServices(stack, cluster, Map.of());
         } catch (Exception e) {
             verify(stackUtil).collectAndCheckReachableNodes(eq(stack), any());
             throw e;
@@ -229,7 +229,7 @@ public class ClusterHostServiceRunnerTest {
         when(stackUtil.collectAndCheckReachableNodes(eq(stack), any())).thenThrow(new NodesUnreachableException("error", unreachableNodes));
 
         CloudbreakServiceException cloudbreakServiceException = Assertions.assertThrows(CloudbreakServiceException.class,
-                () -> underTest.runClusterServices(stack, cluster));
+                () -> underTest.runClusterServices(stack, cluster, Map.of()));
         assertEquals("Can not run cluster services on new nodes because the configuration management service is not responding on these nodes: " +
                 "[node1.example.com]", cloudbreakServiceException.getMessage());
     }
