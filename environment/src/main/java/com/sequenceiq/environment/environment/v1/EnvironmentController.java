@@ -339,8 +339,8 @@ public class EnvironmentController implements EnvironmentEndpoint {
     public DetailedEnvironmentResponse updateAwsDiskEncryptionParametersByEnvironmentCrn(@ValidCrn(resource = CrnResourceDescriptor.ENVIRONMENT)
     @ResourceCrn String crn, @RequestObject @Valid UpdateAwsDiskEncryptionParametersRequest request) {
         String accountId = ThreadBasedUserCrnProvider.getAccountId();
-        EnvironmentDto result = environmentModificationService.updateAwsDiskEncryptionParametersByEnvironmentCrn(accountId, crn,
-                environmentApiConverter.convertUpdateAwsDiskEncryptionParametersDto(request));
+        UpdateAwsDiskEncryptionParametersDto dto = environmentApiConverter.convertUpdateAwsDiskEncryptionParametersDto(request);
+        EnvironmentDto result = environmentModificationService.updateAwsDiskEncryptionParametersByEnvironmentCrn(accountId, crn, dto);
         return environmentResponseConverter.dtoToDetailedResponse(result);
     }
 

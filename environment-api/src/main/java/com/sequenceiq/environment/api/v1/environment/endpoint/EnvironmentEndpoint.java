@@ -129,7 +129,7 @@ public interface EnvironmentEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = EnvironmentOpDescription.UPDATE_AWS_DISK_ENCRYPTION_PARAMETERS_BY_NAME,
             produces = MediaType.APPLICATION_JSON, notes = ENVIRONMENT_NOTES,
-        nickname = "UpdateAwsDiskEncryptionParametersV1")
+        nickname = "UpdateAwsDiskEncryptionParametersV1ByName")
     DetailedEnvironmentResponse updateAwsDiskEncryptionParametersByEnvironmentName(@PathParam("name") String environmentName,
             @Valid UpdateAwsDiskEncryptionParametersRequest request);
 
@@ -201,7 +201,7 @@ public interface EnvironmentEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = EnvironmentOpDescription.UPDATE_AWS_DISK_ENCRYPTION_PARAMETERS_BY_CRN,
             produces = MediaType.APPLICATION_JSON, notes = ENVIRONMENT_NOTES,
-        nickname = "updateAwsDiskEncryptionParametersByEnvironmentCrn")
+        nickname = "updateAwsDiskEncryptionParametersByCrn")
     DetailedEnvironmentResponse updateAwsDiskEncryptionParametersByEnvironmentCrn(@ValidCrn(resource = CrnResourceDescriptor.ENVIRONMENT)
     @PathParam("crn") String crn, @Valid UpdateAwsDiskEncryptionParametersRequest request);
 

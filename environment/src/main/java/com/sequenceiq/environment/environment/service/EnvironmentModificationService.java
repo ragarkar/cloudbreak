@@ -17,6 +17,7 @@ import com.sequenceiq.cloudbreak.common.exception.NotFoundException;
 import com.sequenceiq.cloudbreak.validation.ValidationResult;
 import com.sequenceiq.environment.api.v1.environment.model.base.CloudStorageValidation;
 import com.sequenceiq.environment.api.v1.environment.model.base.IdBrokerMappingSource;
+import com.sequenceiq.environment.api.v1.environment.model.request.aws.UpdateAwsDiskEncryptionParametersRequest;
 import com.sequenceiq.environment.credential.domain.Credential;
 import com.sequenceiq.environment.credential.service.CredentialService;
 import com.sequenceiq.environment.environment.domain.Environment;
@@ -81,8 +82,7 @@ public class EnvironmentModificationService {
             CredentialService credentialService, NetworkService networkService, AuthenticationDtoConverter authenticationDtoConverter,
             ParametersService parametersService, EnvironmentFlowValidatorService environmentFlowValidatorService,
             EnvironmentResourceService environmentResourceService, EnvironmentEncryptionService environmentEncryptionService,
-            EnvironmentViewConverter environmentViewConverter,
-            AwsParametersRepository awsParametersRepository) {
+            EnvironmentViewConverter environmentViewConverter, AwsParametersRepository awsParametersRepository) {
         this.environmentDtoConverter = environmentDtoConverter;
         this.environmentService = environmentService;
         this.credentialService = credentialService;
@@ -197,28 +197,33 @@ public class EnvironmentModificationService {
         return environmentDtoConverter.environmentToDto(saved);
     }
 
-    private EnvironmentDto updateAwsDiskEncryptionParameters(String accountId, String environmentName, AwsDiskEncryptionParametersDto dto,
+    private EnvironmentDto updateAwsDiskEncryptionParameters(String accountId, String environmentNameOrCrn, AwsDiskEncryptionParametersDto dto,
             Environment environment) {
-            ValidationResult validateKey = environmentService.getValidatorService().validateEncryptionKeyArn(dto.getEncryptionKeyArn(),
-                    accountId);
-            if (!validateKey.hasError()) {
-                if (environment.getParameters() == null) {
-                    AwsParameters awsParameters = new AwsParameters();
-                    awsParameters.setEncryptionKeyArn(dto.getEncryptionKeyArn());
-                    awsParameters.setAccountId(environment.getAccountId());
-                    awsParameters.setId(environment.getId());
-                    awsParameters.setName(environment.getName());
-                    awsParameters.setEnvironment(environmentViewConverter.convert(environment));
-                    environment.setParameters(awsParameters);
+            if (dto.getEncryptionKeyArn() != null) {
+                ValidationResult validateKey = environmentService.getValidatorService().validateEncryptionKeyArn(dto.getEncryptionKeyArn(),
+                        accountId);
+                if (!validateKey.hasError()) {
+                    if (environment.getParameters() == null) {
+                        AwsParameters awsParameters = new AwsParameters();
+                        awsParameters.setEncryptionKeyArn(dto.getEncryptionKeyArn());
+                        awsParameters.setAccountId(accountId);
+                        awsParameters.setId(environment.getId());
+                        awsParameters.setName(environment.getName());
+                        awsParameters.setEnvironment(environmentViewConverter.convert(environment));
+                        environment.setParameters(awsParameters);
+                    } else {
+                        AwsParameters awsParameters = (AwsParameters) environment.getParameters();
+                        if (awsParameters.getEncryptionKeyArn() != null) {
+                            ((AwsParameters) (environment.getParameters())).setEncryptionKeyArn(dto.getEncryptionKeyArn());
+                        }
+                    }
+                    LOGGER.debug("Successfully updated the encryption key ARN for the environment {}.", environmentNameOrCrn);
                 } else {
-                    ((AwsParameters) (environment.getParameters())).setEncryptionKeyArn(dto.getEncryptionKeyArn());
+                    throw new BadRequestException(validateKey.getFormattedErrors());
                 }
-                LOGGER.debug("Successfully updated the encryption key arn fot the environment {}.", environmentName);
-            } else {
-                throw new BadRequestException(validateKey.getFormattedErrors());
+                AwsParameters awsParameters = (AwsParameters) environment.getParameters();
+                awsParametersRepository.save(awsParameters);
             }
-            AwsParameters awsParameters = (AwsParameters) environment.getParameters();
-            awsParametersRepository.save(awsParameters);
             return environmentDtoConverter.environmentToDto(environment);
         }
 

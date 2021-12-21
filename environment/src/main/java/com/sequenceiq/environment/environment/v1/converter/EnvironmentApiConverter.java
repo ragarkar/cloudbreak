@@ -236,7 +236,8 @@ public class EnvironmentApiConverter {
     private AwsDiskEncryptionParametersDto awsDiskEncryptionParametersToAwsDiskEncryptionParametersDto(
             AwsDiskEncryptionParameters awsDiskEncryptionParameters) {
         AwsDiskEncryptionParametersDto.Builder awsDiskEncryptionParametersDto = AwsDiskEncryptionParametersDto.builder()
-                .withEncryptionKeyArn(awsDiskEncryptionParameters.getEncryptionKeyArn());
+                .withEncryptionKeyArn(Optional.ofNullable(awsDiskEncryptionParameters.getEncryptionKeyArn())
+                        .orElse(null));
         return awsDiskEncryptionParametersDto.build();
     }
 

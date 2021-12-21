@@ -9,11 +9,11 @@ public class UpdateAwsDiskEncryptionParametersRequestTest {
 
     @Test
     void builderTest() {
-        UpdateAwsDiskEncryptionParametersRequest underTest = new UpdateAwsDiskEncryptionParametersRequest();
-        underTest.setAwsDiskEncryptionParameters(AwsDiskEncryptionParameters.builder()
-                .withEncryptionKeyArn(ENCRYPTION_KEY_ARN)
-                .build()
-        );
+        AwsDiskEncryptionParameters awsDiskEncryptionParameters = AwsDiskEncryptionParameters.builder().
+                withEncryptionKeyArn(ENCRYPTION_KEY_ARN).build();
+        UpdateAwsDiskEncryptionParametersRequest underTest = UpdateAwsDiskEncryptionParametersRequest.builder().
+                withAwsDiskEncryptionParameters(awsDiskEncryptionParameters).build();
+        assertThat(underTest.getAwsDiskEncryptionParameters()).isEqualTo(awsDiskEncryptionParameters);
         assertThat(underTest.getAwsDiskEncryptionParameters().getEncryptionKeyArn()).isEqualTo(ENCRYPTION_KEY_ARN);
     }
 }

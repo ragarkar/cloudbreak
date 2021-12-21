@@ -7,7 +7,7 @@ import com.sequenceiq.environment.api.doc.environment.EnvironmentModelDescriptio
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel(value = "UpdateAwsEncryptionParametersV1Request")
+@ApiModel(value = "UpdateAwsDiskEncryptionParametersV1Request")
 public class UpdateAwsDiskEncryptionParametersRequest implements Serializable {
 
     @ApiModelProperty(EnvironmentModelDescription.RESOURCE_ENCRYPTION_PARAMETERS)
@@ -27,7 +27,7 @@ public class UpdateAwsDiskEncryptionParametersRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "UpdateAwsEncryptionParametersRequest{" +
+        return "UpdateAwsDiskEncryptionParametersRequest{" +
                 "AwsDiskEncryptionParameters='" + awsDiskEncryptionParameters + '\'' +
                 '}';
     }
@@ -44,9 +44,9 @@ public class UpdateAwsDiskEncryptionParametersRequest implements Serializable {
         }
 
         public UpdateAwsDiskEncryptionParametersRequest build() {
-            UpdateAwsDiskEncryptionParametersRequest updateAwsEncryptionParametersRequest = new UpdateAwsDiskEncryptionParametersRequest();
-            updateAwsEncryptionParametersRequest.setAwsDiskEncryptionParameters(awsDiskEncryptionParameters);
-            return updateAwsEncryptionParametersRequest;
+            UpdateAwsDiskEncryptionParametersRequest updateAwsDiskEncryptionParametersRequest = new UpdateAwsDiskEncryptionParametersRequest();
+            updateAwsDiskEncryptionParametersRequest.setAwsDiskEncryptionParameters(awsDiskEncryptionParameters);
+            return updateAwsDiskEncryptionParametersRequest;
         }
     }
 }

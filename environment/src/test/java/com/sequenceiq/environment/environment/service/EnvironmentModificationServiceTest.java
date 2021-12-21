@@ -712,10 +712,9 @@ class EnvironmentModificationServiceTest {
                 .findByNameAndAccountIdAndArchivedIsFalse(eq(ENVIRONMENT_NAME), eq(ACCOUNT_ID))).thenReturn(Optional.of(env));
         when(validatorService.validateEncryptionKeyArn(any(String.class), any(String.class))).thenReturn(ValidationResult.builder().build());
         when(environmentDtoConverter.environmentToDto(env)).thenReturn(new EnvironmentDto());
-
-        environmentModificationServiceUnderTest.updateAwsDiskEncryptionParametersByEnvironmentName(ACCOUNT_ID,
+        EnvironmentDto environmentDto = environmentModificationServiceUnderTest.updateAwsDiskEncryptionParametersByEnvironmentName(ACCOUNT_ID,
                 ENVIRONMENT_NAME, updateAwsDiskEncryptionParametersDto);
-
+        assertEquals(environmentDto.getParameters().getAwsParametersDto().getAwsDiskEncryptionParametersDto().getEncryptionKeyArn(), "dummyKeyArn");
         ArgumentCaptor<AwsParameters> awsParametersArgumentCaptor = ArgumentCaptor.forClass(AwsParameters.class);
         verify(awsParametersRepository).save(awsParametersArgumentCaptor.capture());
         assertEquals("dummyKeyArn", awsParametersArgumentCaptor.getValue().getEncryptionKeyArn());
@@ -732,13 +731,12 @@ class EnvironmentModificationServiceTest {
         env.setParameters(new AwsParameters());
         when(environmentService.getValidatorService()).thenReturn(validatorService);
         when(environmentService
-                .findByResourceCrnAndAccountIdAndArchivedIsFalse(eq(ENVIRONMENT_NAME), eq(ACCOUNT_ID))).thenReturn(Optional.of(env));
+                .findByResourceCrnAndAccountIdAndArchivedIsFalse(eq(CRN), eq(ACCOUNT_ID))).thenReturn(Optional.of(env));
         when(validatorService.validateEncryptionKeyArn(any(String.class), any(String.class))).thenReturn(ValidationResult.builder().build());
         when(environmentDtoConverter.environmentToDto(env)).thenReturn(new EnvironmentDto());
-
-        environmentModificationServiceUnderTest.updateAwsDiskEncryptionParametersByEnvironmentCrn(ACCOUNT_ID,
+        EnvironmentDto environmentDto = environmentModificationServiceUnderTest.updateAwsDiskEncryptionParametersByEnvironmentCrn(ACCOUNT_ID,
                 ENVIRONMENT_NAME, updateAwsDiskEncryptionParametersDto);
-
+        assertEquals(environmentDto.getParameters().getAwsParametersDto().getAwsDiskEncryptionParametersDto().getEncryptionKeyArn(), "dummyKeyArn");
         ArgumentCaptor<AwsParameters> awsParametersArgumentCaptor = ArgumentCaptor.forClass(AwsParameters.class);
         verify(awsParametersRepository).save(awsParametersArgumentCaptor.capture());
         assertEquals("dummyKeyArn", awsParametersArgumentCaptor.getValue().getEncryptionKeyArn());
